@@ -7,25 +7,51 @@
       google.charts.setOnLoadCallback(drawChart);
 
       function drawChart() {
-        var data = google.visualization.arrayToDataTable([
-          ['X', 'Data'],
-          ['1',  10],
-          ['2',  20],
-          ['3',  30],
-          ['4',  40],
-          ['5',  50]
-        ]);
+        // 示例数据
+        var maxPoints = 100;
+        var rawData = [];
+
+
+        // 准备图表数据
+        var data = new google.visualization.DataTable();
+        data.addColumn('string', 'X');
+        data.addColumn('number', 'Data');
+        data.addColumn('number', 'Rolling Avg of Last 10');
+
+        rawData.forEach(function (point, index) {
+          var avgLast10 = index >= 9 ? calculateAverage(rawData, index - 9, index) : null;
+          data.addRow([point[0], point[1], avgLast10]);
+        });
 
         var options = {
-          title: 'Simple Line Chart',
+          title: 'Line Chart with Rolling Average',
           curveType: 'function',
           legend: { position: 'bottom' }
         };
 
         var chart = new google.visualization.LineChart(document.getElementById('linechart'));
-
         chart.draw(data, options);
       }
+
+      // 辅助函数来计算特定范围内的平均值
+      function calculateAverage(data, start, end) {
+        var sum = 0;
+        for (var i = start; i <= end; i++) {
+          sum += data[i][1];
+        }
+        return sum / (end - start + 1);
+      }
+// 外部调用的函数来添加数据
+function addDataPoint(newPoint) {
+  if (data.getNumberOfRows() >= 100) {
+    // 移除第一行数据
+    data.removeRow(0);
+  }
+  // 添加新数据点
+  data.addRow(newPoint);
+  // 重新绘制图表
+  chart.draw(data, options);
+}
     </script>
   </head>
   <body>
