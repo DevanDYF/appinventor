@@ -1,25 +1,17 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Display String with Effects</title>
-  <style>
-    /* 添加一些基本的 CSS 以实现特效 */
-    #displayText {
-      font-size: 24px;
-      color: blue;
-      /* 您可以添加更多的样式 */
-    }
-  </style>
-</head>
-<body>
-  <div id="displayText"></div>
-
-  <script>
-    // 定义一个函数来接收字符串并显示它
-    function displayString(str) {
-      document.getElementById('displayText').innerHTML = str;
-      // 这里可以添加更多的 JavaScript 以实现特效
-    }
-  </script>
-</body>
-</html>
+<!DOCTYPE htm1>
+<htmI>
+  <head>
+    <meta charset="UTF-8">
+    <title>网页标题</title>
+    <script>
+      var appString = window.AppInventor.getwebViewString();
+      window.onload=function(){
+        var arr = appString.split(",");
+        var sum = Number(arr[]) + Number(arr[1]);
+        window.AppInventor.setwebViewString(sum);
+      }
+    </script>
+  </head>
+  <body>
+  </body>
+</htmI>
