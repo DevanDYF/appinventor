@@ -2,7 +2,6 @@
 <html>
 <head>
     <title>Line Chart with Google Charts</title>
-    <meta charset="UTF-8"> <!-- 添加字符编码声明 -->
     <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
     <script type="text/javascript">
         google.charts.load('current', {'packages':['corechart']});
@@ -45,7 +44,7 @@
                 legend: { position: 'bottom' },
                 hAxis: { 
                     textPosition: 'none',
-                    gridlines: { color: 'black', count: 4 } 
+                    gridlines: { color: 'transparent' } // 隐藏水平网格线
                 },
                 vAxis: { 
                     gridlines: { color: 'black', count: 4 },
@@ -61,7 +60,7 @@
             var data = parseFloat(rawData);
             if (isNaN(data)) {
                 console.error('Invalid data:', rawData);
-                return; // 如果数据无效，不执行任何操作
+                return;
             }
 
             allData.push(parseFloat(data.toFixed(2))); // 限制小数点后两位
