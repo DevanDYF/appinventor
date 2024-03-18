@@ -2,20 +2,20 @@
 <html>
 <head>
     <title>Line Chart with Google Charts</title>
-    <meta charset="UTF-8">
+    <meta charset="UTF-8"> <!-- 添加字符编码声明 -->
     <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
     <script type="text/javascript">
         google.charts.load('current', {'packages':['corechart']});
         google.charts.setOnLoadCallback(drawChart);
 
         var allData = [];
-        var maxDisplayPoints = 250; // 更新为250个数据点
-        var maxDataPoints = 250; // 设置为250，用于循环覆盖数据
+        var maxDisplayPoints = 100;
+        var maxDataPoints = 200;
 
         function calculateAverage(data, count) {
             if (data.length < count) return null;
             var sum = data.slice(-count).reduce(function(a, b) { return a + b; }, 0);
-            return parseFloat((sum / count).toFixed(2));
+            return parseFloat((sum / count).toFixed(2)); // 限制小数点后两位
         }
 
         function drawChart() {
@@ -28,7 +28,7 @@
             var displayData = allData.slice(-maxDisplayPoints);
 
             var preparedData = displayData.map(function (value, index) {
-                var slicedData = allData.slice(0, index + 1);
+                var slicedData = allData.slice(0, allData.length - displayData.length + index + 1);
                 return [
                     index.toString(),
                     value, 
@@ -61,15 +61,13 @@
             var data = parseFloat(rawData);
             if (isNaN(data)) {
                 console.error('Invalid data:', rawData);
-                return;
+                return; // 如果数据无效，不执行任何操作
             }
 
-            data = parseFloat(data.toFixed(2));
+            allData.push(parseFloat(data.toFixed(2))); // 限制小数点后两位
 
-            if (allData.length < maxDataPoints) {
-                allData.push(data);
-            } else {
-                allData[allData.length % maxDataPoints] = data; // 循环覆盖数据点
+            if (allData.length > maxDataPoints) {
+                allData.shift();
             }
             
             drawChart();
