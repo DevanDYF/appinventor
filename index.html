@@ -1,58 +1,76 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Canvas Line Chart</title>
-    <style>
-        #chartCanvas {
-            width: 900px;
-            height: 500px;
-            background-color: #f8f8f8;
-        }
-    </style>
-</head>
-<body>
-    <canvas id="chartCanvas" width="900" height="500"></canvas>
-    <script>
-        var allData = new Array(100).fill(0); // 存储数据的数组
-        var currentIndex = 0; // 当前数据点的索引
+    <title>Line Chart with Google Charts</title>
+    <meta charset="UTF-8">
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type="text/javascript">
+        google.charts.load('current', {'packages':['corechart']});
+        google.charts.setOnLoadCallback(drawChart);
 
-        function drawLineChart() {
-            var canvas = document.getElementById('chartCanvas');
-            if (canvas.getContext) {
-                var ctx = canvas.getContext('2d');
-                
-                // 清除画布
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                
-                // 绘制图表
-                ctx.beginPath();
-                var sliceWidth = canvas.width * 1.0 / allData.length;
-                var x = 0;
-                for (var i = 0; i < allData.length; i++) {
-                    var v = allData[i];
-                    var y = canvas.height - (v / 100) * canvas.height; // 假设数据范围为0-100
-                    if (i === 0) {
-                        ctx.moveTo(x, y);
-                    } else {
-                        ctx.lineTo(x, y);
-                    }
-                    x += sliceWidth;
-                }
-                ctx.stroke();
+        var allData = []; // 存储所有数据点
+        var tempData = []; // 临时存储新接收的数据
+        var maxDisplayPoints = 250; // 最多显示的数据点数
+        var updateInterval = 1000; // 更新间隔（毫秒）
+
+        function calculateAverage(data, count) {
+            if (data.length < count) return null;
+            var sum = data.slice(-count).reduce(function(a, b) { return a + b; }, 0);
+            return parseFloat((sum / count).toFixed(2));
+        }
+
+        function drawChart() {
+            var data = new google.visualization.DataTable();
+            data.addColumn('string', 'X');
+            data.addColumn('number', '实时数据');
+            data.addColumn('number', '10点平均');
+            data.addColumn('number', '100点平均');
+
+            var displayData = allData.slice(-maxDisplayPoints);
+            var preparedData = displayData.map(function(value, index) {
+                var slicedData = allData.slice(0, allData.length - displayData.length + index + 1);
+                return [
+                    index.toString(),
+                    value,
+                    calculateAverage(slicedData, 10),
+                    calculateAverage(slicedData, 100)
+                ];
+            });
+
+            data.addRows(preparedData);
+
+            var options = {
+                title: '折线图',
+                curveType: 'function',
+                legend: { position: 'bottom' },
+                hAxis: { textPosition: 'none', gridlines: { color: 'transparent' } },
+                vAxis: { gridlines: { color: 'transparent' }, minorGridlines: { count: 0 } }
+            };
+
+            var chart = new google.visualization.LineChart(document.getElementById('curve_chart'));
+            chart.draw(data, options);
+        }
+
+        function addDataToChart(rawData) {
+            var data = parseFloat(rawData);
+            if (!isNaN(data)) {
+                tempData.push(parseFloat(data.toFixed(2)));
             }
         }
 
-        function addData(data) {
-            allData[currentIndex] = data;
-            currentIndex = (currentIndex + 1) % allData.length; // 环形数组逻辑
-            drawLineChart();
-        }
-
-        // 测试用，每200ms更新一次数据
+        // 定时批量更新图表
         setInterval(function() {
-            var newData = Math.random() * 100; // 生成一个0到100之间的随机数
-            addData(newData);
-        }, 200);
+            if (tempData.length > 0) {
+                allData = allData.concat(tempData.splice(0, tempData.length)); // 将临时数据移动到主数据数组
+                if (allData.length > maxDisplayPoints) {
+                    allData = allData.slice(-maxDisplayPoints); // 保持数据数组的最大长度
+                }
+                drawChart();
+            }
+        }, updateInterval);
     </script>
+</head>
+<body>
+    <div id="curve_chart" style="width: 900px; height: 500px"></div>
 </body>
 </html>
