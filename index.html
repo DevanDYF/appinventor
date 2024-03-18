@@ -1,74 +1,58 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Line Chart with Google Charts</title>
-    <meta charset="UTF-8">
-    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
-    <script type="text/javascript">
-        google.charts.load('current', {'packages':['corechart']});
-        google.charts.setOnLoadCallback(drawChart);
-
-        var allData = new Array(100).fill(null); // 初始化100个数据点为null
-        var currentIndex = 0; // 当前替换的索引位置
-
-        function calculateAverage(data, count) {
-            var validData = data.filter(function(value) { return value != null; });
-            if (validData.length < count) return null;
-            var sum = validData.slice(-count).reduce(function(a, b) { return a + b; }, 0);
-            return parseFloat((sum / count).toFixed(2));
+    <title>Canvas Line Chart</title>
+    <style>
+        #chartCanvas {
+            width: 900px;
+            height: 500px;
+            background-color: #f8f8f8;
         }
-
-        function drawChart() {
-            var data = new google.visualization.DataTable();
-            data.addColumn('string', 'X');
-            data.addColumn('number', '实时数据');
-            data.addColumn('number', '10点平均');
-            data.addColumn('number', '100点平均');
-
-            var preparedData = allData.map(function (value, index) {
-                return [
-                    index.toString(),
-                    value,
-                    calculateAverage(allData.slice(0, index + 1), 10),
-                    calculateAverage(allData, 100)
-                ];
-            }).filter(function (row) { return row[1] != null; }); // 过滤掉null值
-
-            data.addRows(preparedData);
-
-            var options = {
-                title: '折线图',
-                curveType: 'function',
-                legend: { position: 'bottom' },
-                hAxis: { 
-                    textPosition: 'none',
-                    gridlines: { color: 'transparent' } 
-                },
-                vAxis: { 
-                    gridlines: { color: 'transparent' },
-                    minorGridlines: { count: 0 }
-                }
-            };
-
-            var chart = new google.visualization.LineChart(document.getElementById('curve_chart'));
-            chart.draw(data, options);
-        }
-
-        function addDataToChart(rawData) {
-            var data = parseFloat(rawData);
-            if (isNaN(data)) {
-                console.error('Invalid data:', rawData);
-                return;
-            }
-
-            allData[currentIndex] = parseFloat(data.toFixed(2));
-            currentIndex = (currentIndex + 1) % allData.length; // 更新索引位置，循环回到开始
-            
-            drawChart();
-        }
-    </script>
+    </style>
 </head>
 <body>
-    <div id="curve_chart" style="width: 900px; height: 500px"></div>
+    <canvas id="chartCanvas" width="900" height="500"></canvas>
+    <script>
+        var allData = new Array(100).fill(0); // 存储数据的数组
+        var currentIndex = 0; // 当前数据点的索引
+
+        function drawLineChart() {
+            var canvas = document.getElementById('chartCanvas');
+            if (canvas.getContext) {
+                var ctx = canvas.getContext('2d');
+                
+                // 清除画布
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // 绘制图表
+                ctx.beginPath();
+                var sliceWidth = canvas.width * 1.0 / allData.length;
+                var x = 0;
+                for (var i = 0; i < allData.length; i++) {
+                    var v = allData[i];
+                    var y = canvas.height - (v / 100) * canvas.height; // 假设数据范围为0-100
+                    if (i === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                    x += sliceWidth;
+                }
+                ctx.stroke();
+            }
+        }
+
+        function addData(data) {
+            allData[currentIndex] = data;
+            currentIndex = (currentIndex + 1) % allData.length; // 环形数组逻辑
+            drawLineChart();
+        }
+
+        // 测试用，每200ms更新一次数据
+        setInterval(function() {
+            var newData = Math.random() * 100; // 生成一个0到100之间的随机数
+            addData(newData);
+        }, 200);
+    </script>
 </body>
 </html>
