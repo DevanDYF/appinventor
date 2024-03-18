@@ -2,20 +2,20 @@
 <html>
 <head>
     <title>Line Chart with Google Charts</title>
-    <meta charset="UTF-8"> <!-- 添加字符编码声明 -->
+    <meta charset="UTF-8">
     <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
     <script type="text/javascript">
         google.charts.load('current', {'packages':['corechart']});
         google.charts.setOnLoadCallback(drawChart);
 
-        var allData = [];
-        var maxDisplayPoints = 100;
-        var maxDataPoints = 200;
+        var allData = new Array(100).fill(null); // 初始化100个数据点为null
+        var currentIndex = 0; // 当前替换的索引位置
 
         function calculateAverage(data, count) {
-            if (data.length < count) return null;
-            var sum = data.slice(-count).reduce(function(a, b) { return a + b; }, 0);
-            return parseFloat((sum / count).toFixed(2)); // 限制小数点后两位
+            var validData = data.filter(function(value) { return value != null; });
+            if (validData.length < count) return null;
+            var sum = validData.slice(-count).reduce(function(a, b) { return a + b; }, 0);
+            return parseFloat((sum / count).toFixed(2));
         }
 
         function drawChart() {
@@ -25,17 +25,14 @@
             data.addColumn('number', '10点平均');
             data.addColumn('number', '100点平均');
 
-            var displayData = allData.slice(-maxDisplayPoints);
-
-            var preparedData = displayData.map(function (value, index) {
-                var slicedData = allData.slice(0, allData.length - displayData.length + index + 1);
+            var preparedData = allData.map(function (value, index) {
                 return [
                     index.toString(),
-                    value, 
-                    calculateAverage(slicedData, 10),
-                    calculateAverage(slicedData, 100)
+                    value,
+                    calculateAverage(allData.slice(0, index + 1), 10),
+                    calculateAverage(allData, 100)
                 ];
-            });
+            }).filter(function (row) { return row[1] != null; }); // 过滤掉null值
 
             data.addRows(preparedData);
 
@@ -61,14 +58,11 @@
             var data = parseFloat(rawData);
             if (isNaN(data)) {
                 console.error('Invalid data:', rawData);
-                return; // 如果数据无效，不执行任何操作
+                return;
             }
 
-            allData.push(parseFloat(data.toFixed(2))); // 限制小数点后两位
-
-            if (allData.length > maxDataPoints) {
-                allData.shift();
-            }
+            allData[currentIndex] = parseFloat(data.toFixed(2));
+            currentIndex = (currentIndex + 1) % allData.length; // 更新索引位置，循环回到开始
             
             drawChart();
         }
