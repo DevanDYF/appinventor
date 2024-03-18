@@ -2,19 +2,20 @@
 <html>
 <head>
     <title>Line Chart with Google Charts</title>
+    <meta charset="UTF-8">
     <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
     <script type="text/javascript">
         google.charts.load('current', {'packages':['corechart']});
         google.charts.setOnLoadCallback(drawChart);
 
         var allData = [];
-        var maxDisplayPoints = 100;
-        var maxDataPoints = 200;
+        var maxDisplayPoints = 250; // 更新为250个数据点
+        var maxDataPoints = 250; // 设置为250，用于循环覆盖数据
 
         function calculateAverage(data, count) {
             if (data.length < count) return null;
             var sum = data.slice(-count).reduce(function(a, b) { return a + b; }, 0);
-            return parseFloat((sum / count).toFixed(2)); // 限制小数点后两位
+            return parseFloat((sum / count).toFixed(2));
         }
 
         function drawChart() {
@@ -27,7 +28,7 @@
             var displayData = allData.slice(-maxDisplayPoints);
 
             var preparedData = displayData.map(function (value, index) {
-                var slicedData = allData.slice(0, allData.length - displayData.length + index + 1);
+                var slicedData = allData.slice(0, index + 1);
                 return [
                     index.toString(),
                     value, 
@@ -44,7 +45,7 @@
                 legend: { position: 'bottom' },
                 hAxis: { 
                     textPosition: 'none',
-                    gridlines: { color: 'transparent' } // 隐藏水平网格线
+                    gridlines: { color: 'transparent' } 
                 },
                 vAxis: { 
                     gridlines: { color: 'transparent' },
@@ -63,10 +64,12 @@
                 return;
             }
 
-            allData.push(parseFloat(data.toFixed(2))); // 限制小数点后两位
+            data = parseFloat(data.toFixed(2));
 
-            if (allData.length > maxDataPoints) {
-                allData.shift();
+            if (allData.length < maxDataPoints) {
+                allData.push(data);
+            } else {
+                allData[allData.length % maxDataPoints] = data; // 循环覆盖数据点
             }
             
             drawChart();
