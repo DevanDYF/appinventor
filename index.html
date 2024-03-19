@@ -26,36 +26,38 @@
         }
 
         function drawChart() {
-            var data = new google.visualization.DataTable();
-            data.addColumn('string', 'X');
-            data.addColumn('number', '实时数据');
-            data.addColumn('number', '10点平均');
-            data.addColumn('number', '100点平均');
+    var data = new google.visualization.DataTable();
+    data.addColumn('string', 'X');
+    data.addColumn('number', '实时数据');
+    data.addColumn('number', '10点平均');
+    data.addColumn('number', '100点平均');
 
-            // 仅绘制最新的maxDisplayPoints个点
-            var displayData = allData.slice(-maxDisplayPoints);
-            var preparedData = displayData.map(function(value, index) {
-                return [
-                    index.toString(),
-                    value,
-                    calculateAverage(allData, 10),
-                    calculateAverage(allData, 100)
-                ];
-            });
+    var displayData = allData.slice(-maxDisplayPoints);
+    var preparedData = displayData.map(function(value, index, arr) {
+        // 对于每个点，计算其10点平均和100点平均，基于当前点之前的数据
+        var actualIndex = allData.length - maxDisplayPoints + index;
+        return [
+            index.toString(),
+            value,
+            calculateAverage(allData.slice(Math.max(0, actualIndex - 9), actualIndex + 1), 10),
+            calculateAverage(allData.slice(Math.max(0, actualIndex - 99), actualIndex + 1), 100)
+        ];
+    });
 
-            data.addRows(preparedData);
+    data.addRows(preparedData);
 
-            var options = {
-                title: '折线图',
-                curveType: 'function',
-                legend: { position: 'bottom' },
-                hAxis: { textPosition: 'none', gridlines: { color: 'transparent' } },
-                vAxis: { gridlines: { color: 'transparent' }, minorGridlines: { count: 0 } }
-            };
+    var options = {
+        title: '折线图',
+        curveType: 'function',
+        legend: { position: 'bottom' },
+        hAxis: { textPosition: 'none', gridlines: { color: 'transparent' } },
+        vAxis: { gridlines: { color: 'transparent' }, minorGridlines: { count: 0 } }
+    };
 
-            var chart = new google.visualization.LineChart(document.getElementById('curve_chart'));
-            chart.draw(data, options);
-        }
+    var chart = new google.visualization.LineChart(document.getElementById('curve_chart'));
+    chart.draw(data, options);
+}
+
 
         function addDataToChart(rawData) {
             var data = parseFloat(rawData);
