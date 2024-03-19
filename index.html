@@ -10,13 +10,19 @@
 
         var allData = []; // 存储所有数据点
         var tempData = []; // 临时存储新接收的数据
-        var maxDisplayPoints = 250; // 最多显示的数据点数
+        var maxDisplayPoints = 150; // 最多显示的数据点数
         var updateInterval = 500; // 更新间隔（毫秒）
+        var totalDataPoints = 250; // 总数据点，包括为了计算平均值而额外保留的点
 
         function calculateAverage(data, count) {
-            if (data.length < count) return null;
-            var sum = data.slice(-count).reduce(function(a, b) { return a + b; }, 0);
-            return parseFloat((sum / count).toFixed(2));
+            var endIndex = data.length;
+            var startIndex = endIndex - count;
+            if (startIndex < 0) startIndex = 0;
+            var sum = 0;
+            for (var i = startIndex; i < endIndex; i++) {
+                sum += data[i];
+            }
+            return parseFloat((sum / Math.min(endIndex - startIndex, count)).toFixed(2));
         }
 
         function drawChart() {
@@ -26,14 +32,14 @@
             data.addColumn('number', '10点平均');
             data.addColumn('number', '100点平均');
 
+            // 仅绘制最新的maxDisplayPoints个点
             var displayData = allData.slice(-maxDisplayPoints);
             var preparedData = displayData.map(function(value, index) {
-                var slicedData = allData.slice(0, allData.length - displayData.length + index + 1);
                 return [
                     index.toString(),
                     value,
-                    calculateAverage(slicedData, 10),
-                    calculateAverage(slicedData, 100)
+                    calculateAverage(allData, 10),
+                    calculateAverage(allData, 100)
                 ];
             });
 
@@ -62,8 +68,9 @@
         setInterval(function() {
             if (tempData.length > 0) {
                 allData = allData.concat(tempData.splice(0, tempData.length)); // 将临时数据移动到主数据数组
-                if (allData.length > maxDisplayPoints) {
-                    allData = allData.slice(-maxDisplayPoints); // 保持数据数组的最大长度
+                // 确保数据数组的长度不超过设置的总数据点数
+                if (allData.length > totalDataPoints) {
+                    allData = allData.slice(allData.length - totalDataPoints);
                 }
                 drawChart();
             }
