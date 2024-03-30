@@ -1,85 +1,109 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Line Chart with Google Charts</title>
+    <title>Line Chart with Chart.js</title>
     <meta charset="UTF-8">
-    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
-    <script type="text/javascript">
-        google.charts.load('current', {'packages':['corechart']});
-        google.charts.setOnLoadCallback(drawChart);
-
-        var allData = []; // 存储所有数据点
-        var tempData = []; // 临时存储新接收的数据
-        var maxDisplayPoints = 150; // 最多显示的数据点数
-        var updateInterval = 500; // 更新间隔（毫秒）
-        var totalDataPoints = 250; // 总数据点，包括为了计算平均值而额外保留的点
-
-        function calculateAverage(data, count) {
-            var endIndex = data.length;
-            var startIndex = endIndex - count;
-            if (startIndex < 0) startIndex = 0;
-            var sum = 0;
-            for (var i = startIndex; i < endIndex; i++) {
-                sum += data[i];
-            }
-            return parseFloat((sum / Math.min(endIndex - startIndex, count)).toFixed(2));
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        canvas {
+            max-width: 900px;
+            max-height: 500px;
         }
-
-        function drawChart() {
-    var data = new google.visualization.DataTable();
-    data.addColumn('string', 'X');
-    data.addColumn('number', '实时数据');
-    data.addColumn('number', '10点平均');
-    data.addColumn('number', '100点平均');
-
-    var displayData = allData.slice(-maxDisplayPoints);
-    var preparedData = displayData.map(function(value, index, arr) {
-        // 对于每个点，计算其10点平均和100点平均，基于当前点之前的数据
-        var actualIndex = allData.length - maxDisplayPoints + index;
-        return [
-            index.toString(),
-            value,
-            calculateAverage(allData.slice(Math.max(0, actualIndex - 9), actualIndex + 1), 10),
-            calculateAverage(allData.slice(Math.max(0, actualIndex - 99), actualIndex + 1), 100)
-        ];
-    });
-
-    data.addRows(preparedData);
-
-    var options = {
-        title: '折线图',
-        curveType: 'function',
-        legend: { position: 'bottom' },
-        hAxis: { textPosition: 'none', gridlines: { color: 'transparent' } },
-        vAxis: { gridlines: { color: 'transparent' }, minorGridlines: { count: 0 } }
-    };
-
-    var chart = new google.visualization.LineChart(document.getElementById('curve_chart'));
-    chart.draw(data, options);
-}
-
-
-        function addDataToChart(rawData) {
-            var data = parseFloat(rawData);
-            if (!isNaN(data)) {
-                tempData.push(parseFloat(data.toFixed(2)));
-            }
-        }
-
-        // 定时批量更新图表
-        setInterval(function() {
-            if (tempData.length > 0) {
-                allData = allData.concat(tempData.splice(0, tempData.length)); // 将临时数据移动到主数据数组
-                // 确保数据数组的长度不超过设置的总数据点数
-                if (allData.length > totalDataPoints) {
-                    allData = allData.slice(allData.length - totalDataPoints);
-                }
-                drawChart();
-            }
-        }, updateInterval);
-    </script>
+    </style>
 </head>
 <body>
-    <div id="curve_chart" style="width: 900px; height: 500px"></div>
+    <canvas id="curve_chart"></canvas>
+    <script>
+        var allData = []; // 初始数据为空
+        var dataIndex = 0; // 数据索引，用于跟踪下一个将被替换的位置
+        var maxDisplayPoints = 151; // 显示的数据点数
+
+        // 获取canvas元素并创建Chart.js图表
+        var ctx = document.getElementById('curve_chart').getContext('2d');
+        var chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [], // X轴标签
+                datasets: [{
+                    label: '实时数据',
+                    data: [], // Y轴数据
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 1,
+                    fill: false,
+                    pointRadius: 0 // 设置数据点半径为0来隐藏数据点
+                }]
+            },
+            options: {
+                scales: {
+                    x: {
+                        display: true,
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            display: false
+                        }
+                    },
+                    y: {
+                        display: true,
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.1)'
+                        }
+                    }
+                },
+                animation: false // 关闭动画效果
+            }
+        });
+
+        // 创建一个插件来绘制竖线
+        var verticalLinePlugin = {
+            id: 'verticalLine',
+            afterDraw: function(chart) {
+                var ctx = chart.ctx;
+                var xScale = chart.scales.x;
+                var yScale = chart.scales.y;
+                var xPos = xScale.getPixelForValue(dataIndex); // 使用dataIndex获取竖线位置的x坐标
+
+                ctx.save();
+                ctx.beginPath();
+                ctx.moveTo(xPos, yScale.top);
+                ctx.lineTo(xPos, yScale.bottom);
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = 'black';
+                ctx.stroke();
+                ctx.restore();
+            }
+        };
+
+        // 注册插件
+        Chart.register(verticalLinePlugin);
+
+        // 添加新数据到图表
+        function addDataToChart(newData) {
+            // 如果数组长度未达到maxDisplayPoints，直接添加新数据
+            if (allData.length < maxDisplayPoints) {
+                allData.push(newData);
+                chart.data.labels.push(dataIndex);
+            } else {
+                // 否则，替换下一个位置的数据
+                allData[dataIndex] = newData;
+                // 更新数据索引，实现循环覆盖
+                dataIndex = (dataIndex + 1) % maxDisplayPoints;
+                // 更新X轴标签
+                for (var i = 0; i < maxDisplayPoints; i++) {
+                    chart.data.labels[i] = i;
+                }
+            }
+            // 更新Y轴数据
+            chart.data.datasets[0].data = allData;
+            // 如果allData的长度超过了maxDisplayPoints，截断数组
+            if (allData.length > maxDisplayPoints) {
+                allData = allData.slice(-maxDisplayPoints);
+                chart.data.labels = chart.data.labels.slice(-maxDisplayPoints);
+            }
+            // 更新图表
+            chart.update();
+        }
+    </script>
 </body>
 </html>
